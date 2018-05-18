@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon -i ./public/services -i ./templates/services ./server.js"
+    "start": "nodemon -i ./public/services -i ./templates/services ./server.js",
+    "start:prod": "node -i ./public/services -i ./templates/services ./server.js",
+    "start:new": "rm ./public/services/Reviews.js && rm ./templates/services/Reviews-server.js && node ./server.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +26,7 @@
     "node-fetch": "^2.1.1",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
+    "redis": "^2.8.0",
     "webpack": "^3.11.0"
   }
 }

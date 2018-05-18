@@ -8,6 +8,9 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+const redis = require('redis');
+const client = redis.createClient({ host: '18.144.64.77', port: 6379 });
+
 const clientBundles = './public/services';
 const serverBundles = './templates/services';
 const serviceConfig = require('./service-config.json');
@@ -29,26 +32,62 @@ const renderComponents = (components, props) => {
 
 app.use('/', express.static(path.join(__dirname, './public')));
 
-app.get('/restaurants/:id', function(req, res) {
+app.get('/loaderio-45ed40b001c7f8d14177808e4f968fc4', (req, res) => {
+  res.end('loaderio-45ed40b001c7f8d14177808e4f968fc4');
+});
+
+// app.get('/restaurants/:id', function(req, res) {
+//   const id = req.params.id;
+//   axios.get(`http://13.56.11.179:3003/api/restaurants/${id}`)
+//     .then(({data}) => {
+//       let obj = {
+//         reviewList: data,
+//         rating: data.rating
+//       }
+//       let components = renderComponents(services, obj);
+//       res.end(Layout(
+//         'FeastBeast',
+//         App(...components),
+//         Scripts(Object.keys(services), obj)
+//       ));
+//     })
+//     .catch((error) => {
+//       console.log('error: ', error)
+//     })
+// });
+
+app.get('/restaurants/:id', (req, res) => {
   let id = req.params.id;
-  axios.get(`http://127.0.0.1:3003/api/restaurants/${id}`)
-    .then(({data}) => {
-      let obj = {
-        reviewList: data,
-        rating: data.rating
-      }
-      let components = renderComponents(services, obj);
+  client.get(id, (err, result) => {
+    if (result) {
+      let components = renderComponents(services, JSON.parse(result));
       res.end(Layout(
         'FeastBeast',
         App(...components),
-        Scripts(Object.keys(services), obj)
+        Scripts(Object.keys(services), JSON.parse(result))
       ));
-    })
-    .catch((error) => {
-      console.log('error: ', error)
-    })
+    } else {
+      axios.get(`http://apateez-loadbalancer-services-237192466.us-west-1.elb.amazonaws.com /api/restaurants/${id}`)
+        .then(({data}) => {
+          let obj = {
+            reviewList: data,
+            rating: data.rating
+          }
+          let components = renderComponents(services, obj);
+          res.end(Layout(
+            'FeastBeast',
+            App(...components),
+            Scripts(Object.keys(services), obj)
+          ));
+          client.setex(id, 60*60, JSON.stringify(obj));
+        })
+        .catch((error) => {
+          console.log('error: ', error)
+        })
+      }
+  });
 });
 
 app.listen(port, () => {
-  console.log(`server running at: http://localhost:${port}`);
+  console.log(`server running at:${port}`);
 });
